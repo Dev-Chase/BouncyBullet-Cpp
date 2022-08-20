@@ -1,0 +1,9 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory `/Users/chase/Coding/Cpp/BouncyBullet'
+mkdir -p output
+clang++ -std=c++20 -Wall -Wextra -g -framework IOKit -framework Cocoa -framework OpenGL libraylib.a -Iinclude -c src/main.cpp  -o src/main.o
+clang++ -std=c++20 -Wall -Wextra -g -framework IOKit -framework Cocoa -framework OpenGL libraylib.a -Iinclude -c src/player.cpp  -o src/player.o
+clang++ -std=c++20 -Wall -Wextra -g -framework IOKit -framework Cocoa -framework OpenGL libraylib.a -Iinclude -o output/main src/main.o src/player.o  -Llib
+echo Executing 'all' complete!
+make: Leaving directory `/Users/chase/Coding/Cpp/BouncyBullet'
+ 
