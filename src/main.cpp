@@ -18,6 +18,7 @@ GameState play(Player& player, Vector2& offs);
 
 const int W = 800;
 const int H = 600;
+const Rectangle TEST = Rectangle{0, 0, 50, 50};
 
 int main(void)
 {
@@ -51,6 +52,7 @@ int main(void)
             break;
         case Play:
             gamestate = play(player_ptr, offs_ptr);
+            DrawRectangle(TEST.x-offs.x, TEST.y-offs.y, TEST.width, TEST.height, RED);
             break;
         default:
             break;
