@@ -51,8 +51,8 @@ int main(void)
             gamestate = setup(player_ptr, offs_ptr);
             break;
         case Play:
-            gamestate = play(player_ptr, offs_ptr);
             DrawRectangle(TEST.x-offs.x, TEST.y-offs.y, TEST.width, TEST.height, RED);
+            gamestate = play(player_ptr, offs_ptr);
             break;
         default:
             break;
@@ -97,9 +97,23 @@ GameState setup(Player& player, Vector2& offs) {
 
 
 GameState play(Player& player, Vector2& offs) {
-
     player.update(offs);
     offs = Vector2{player.pos.x-W/2+12.5F, player.pos.y-H/2+12.5F};
+
+    Vector2 TEST_RECT_VERTICES[4] = {
+        Vector2{0, 0},
+        Vector2{0, 50},
+        Vector2{50, 50},
+        Vector2{50, 0}
+    };
+
+    if (player.Shield2RectCol(TEST_RECT_VERTICES)) {
+        // Collision Code with Shield Goes here
+        cout << "Worked" << endl;
+    } else {
+        cout << "Didn't" << endl;
+    }
+
     player.draw(offs);
 
     if (IsKeyPressed(32)){

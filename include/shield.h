@@ -7,7 +7,6 @@ class Shield {
         Vector2 og;
         Vector2 center;
         Vector2 vertices[4];
-        // Vector2 testing[4];
         float DistanceTweenCenters;
         float rot;
         float DistanceTweenVertices[4];

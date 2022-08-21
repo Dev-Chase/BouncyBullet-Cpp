@@ -8,9 +8,11 @@ const int PLAYER_SPEED = 4;
 const int W = 800;
 const int H = 600;
 
+Vector2 GetInterval(Vector2 Vertices[4], Vector2 Axis);
+
 Shield::Shield() : pos(Vector2{0, 0}), size(Vector2{0, 0}), og(Vector2{0, 0}), rot(0), colour(WHITE), center(Vector2{0, 0}), DistanceTweenCenters(0)  {}
 
-Player::Player() : pos(Vector2{0, 0}), size(Vector2{0, 0}), vel(Vector2{0, 0}), shield(Shield()), colour(WHITE) {}
+Player::Player() : pos(Vector2{0, 0}), size(Vector2{0, 0}), vel(Vector2{0, 0}), shield(Shield()), colour(WHITE), angle(0.0F) {}
 
 Player::~Player() {
     std::cout << "Player Destroyed" << "\n";
@@ -24,7 +26,7 @@ float ToRadians(float n) {
     return n * M_PI / 180;
 }
 
-float get_distance(Vector2 from, Vector2 to) {
+float GetDistance(Vector2 from, Vector2 to) {
     if ((from.x-to.x) != 0 && (from.y-to.y) != 0) {
         return (from.x-to.x)/(cos(atan((from.y-to.y)/(from.x-to.x))));
     } else if ((from.x-to.x) == 0 && (from.y-to.y) != 0) {
@@ -36,7 +38,7 @@ float get_distance(Vector2 from, Vector2 to) {
     }
 }
 
-float get_distance_pyth(Vector2 from, Vector2 to) {
+float GetDistancePyth(Vector2 from, Vector2 to) {
     return sqrt((pow(abs(from.x-to.x), 2))+(pow(abs(from.y-to.y), 2)));
 }
 
@@ -59,15 +61,20 @@ void Player::reset(Vector2 coords, float width, float height) {
     this->shield.vertices[2] = Vector2{W/2-55/2, H/2-height/2-10}; // BOTTOMLEFT
     this->shield.vertices[3] = Vector2{W/2+55/2, H/2-height/2-10}; // BOTTOMRIGHT
 
-    this->shield.DistanceTweenVertices[0] = get_distance_pyth(Vector2{W/2, H/2}, shield.vertices[0]);
-    this->shield.DistanceTweenVertices[1] = get_distance_pyth(Vector2{W/2, H/2}, shield.vertices[1]);
-    this->shield.DistanceTweenVertices[2] = get_distance_pyth(Vector2{W/2, H/2}, shield.vertices[2]);
-    this->shield.DistanceTweenVertices[3] = get_distance_pyth(Vector2{W/2, H/2}, shield.vertices[3]);
+    // this->shield.testing[0] = Vector2{W/2-55/2, H/2-height/2-15-10};
+    // this->shield.testing[1] = Vector2{W/2+55/2, H/2-height/2-15-10};
+    // this->shield.testing[2] = Vector2{W/2-55/2, H/2-height/2-10};
+    // this->shield.testing[3] = Vector2{W/2+55/2, H/2-height/2-10};
 
-    this->shield.VertexAngles[0] = 33.690;
-    this->shield.VertexAngles[1] = -33.690;
-    this->shield.VertexAngles[2] = 48.013;
-    this->shield.VertexAngles[3] = -48.013;
+    this->shield.DistanceTweenVertices[0] = GetDistancePyth(Vector2{W/2, H/2}, shield.vertices[0]);
+    this->shield.DistanceTweenVertices[1] = GetDistancePyth(Vector2{W/2, H/2}, shield.vertices[1]);
+    this->shield.DistanceTweenVertices[2] = GetDistancePyth(Vector2{W/2, H/2}, shield.vertices[2]);
+    this->shield.DistanceTweenVertices[3] = GetDistancePyth(Vector2{W/2, H/2}, shield.vertices[3]);
+
+    this->shield.VertexAngles[0] = 35.7539;
+    this->shield.VertexAngles[1] = -35.7539;
+    this->shield.VertexAngles[2] = 50.1944;
+    this->shield.VertexAngles[3] = -50.1944;
 }
 
 void Player::update(Vector2 world_offs) {
@@ -113,8 +120,62 @@ void Player::draw(Vector2& offs) {
     };
 
     DrawCircle(shield.center.x-offs.x, shield.center.y-offs.y, 2, GREEN);
-    DrawCircle(shield.vertices[0].x-offs.x, shield.vertices[0].y-offs.y, 2, GREEN);
-    DrawCircle(shield.vertices[1].x-offs.x, shield.vertices[1].y-offs.y, 2, GREEN);
-    DrawCircle(shield.vertices[2].x-offs.x, shield.vertices[2].y-offs.y, 2, GREEN);
-    DrawCircle(shield.vertices[3].x-offs.x, shield.vertices[3].y-offs.y, 2, GREEN);
+    for (int i = 0; i < 4; i++) {
+        DrawCircle(shield.vertices[i].x-offs.x, shield.vertices[i].y-offs.y, 2, GREEN);
+        // DrawCircle(shield.testing[i].x-offs.x, shield.testing[i].y-offs.y, 2, RED);
+    }
+    // DrawCircle(shield.vertices[0].x-offs.x, shield.vertices[0].y-offs.y, 2, GREEN);
+    // DrawCircle(shield.vertices[1].x-offs.x, shield.vertices[1].y-offs.y, 2, GREEN);
+    // DrawCircle(shield.vertices[2].x-offs.x, shield.vertices[2].y-offs.y, 2, GREEN);
+    // DrawCircle(shield.vertices[3].x-offs.x, shield.vertices[3].y-offs.y, 2, GREEN);
+}
+
+bool Player::WithinCollisionRange(Vector2 OtherCenter, float Rad1, float Rad2) {
+    if (abs(GetDistance(Vector2{pos.x+size.x/2, pos.y+size.y/2}, OtherCenter)) < Rad1+Rad2) {
+        return true;
+    }
+    return false;
+}
+
+bool Player::Shield2RectCol(Vector2 OtherVertices[4]) {
+    Vector2 AxesToTest[4] = {
+        Vector2{0, 1},
+        Vector2{1, 0}
+    };
+    
+    for (int i = 0; i < 2; i++) {
+        if (!(this->OverlapsAxis(OtherVertices, AxesToTest[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Player::OverlapsAxis(Vector2 OtherVertices[4], Vector2 Axis) {
+    Vector2 interval1 = GetInterval(shield.vertices, Axis);
+    Vector2 interval2 = GetInterval(OtherVertices, Axis);
+    return ((interval2.x <= interval1.y) && (interval1.x <= interval2.y));
+}
+
+float Dot(Vector2 V1, Vector2 V2) {
+    return (V1.x*V2.x)+(V1.y*V2.y);
+}
+
+Vector2 GetInterval(Vector2 vertices[4], Vector2 axis) {
+    Vector2 result = Vector2{0, 0};
+
+    result.x = Dot(axis, vertices[0]);
+    result.y = result.x;
+    
+    for (int i = 0;i < 4; i++) {
+        float projection = Dot(axis, vertices[i]);
+        if (projection < result.x) {
+            result.x = projection;
+        }
+        if (projection > result.y) {
+            result.y = projection;
+        }
+    }
+
+    return result;
 }
