@@ -53,18 +53,11 @@ void Player::reset(Vector2 coords, float width, float height) {
     this->shield.og = Vector2{55/2, 25+12.5};
 
     this->shield.center = Vector2{W/2, H/2-height-5};
-    // plyr.shield.rad = abs(get_distance(linalg.Vector2f32{W/2, H/2}, linalg.Vector2f32{W/2-shld_w/2, H/2-shld_h}))
-    // plyr.shield.rad = get_distance(linalg.Vector2f32{W/2, H/2}, linalg.Vector2f32{W/2-plyr.shield.size.x/2, H/2-plyr.size.y/2-10-plyr.shield.size.y})
     this->shield.DistanceTweenCenters = H/2-(H/2-height-5);
     this->shield.vertices[0] = Vector2{W/2-55/2, H/2-height/2-15-10}; //TOPLEFT
     this->shield.vertices[1] = Vector2{W/2+55/2, H/2-height/2-15-10}; //TOPRIGHT
     this->shield.vertices[2] = Vector2{W/2-55/2, H/2-height/2-10}; // BOTTOMLEFT
     this->shield.vertices[3] = Vector2{W/2+55/2, H/2-height/2-10}; // BOTTOMRIGHT
-
-    // this->shield.testing[0] = Vector2{W/2-55/2, H/2-height/2-15-10};
-    // this->shield.testing[1] = Vector2{W/2+55/2, H/2-height/2-15-10};
-    // this->shield.testing[2] = Vector2{W/2-55/2, H/2-height/2-10};
-    // this->shield.testing[3] = Vector2{W/2+55/2, H/2-height/2-10};
 
     this->shield.DistanceTweenVertices[0] = GetDistancePyth(Vector2{W/2, H/2}, shield.vertices[0]);
     this->shield.DistanceTweenVertices[1] = GetDistancePyth(Vector2{W/2, H/2}, shield.vertices[1]);
@@ -77,65 +70,22 @@ void Player::reset(Vector2 coords, float width, float height) {
     this->shield.VertexAngles[3] = -50.1944;
 }
 
-void Player::update(Vector2 world_offs, const Rectangle Walls[], const Vector2 WallsVertices[][4], const int SizeofWalls) {
-    // Right Key = 262      D Key = 68
-    // Left Key = 263       A Key = 65
-    // Up Key = 265         W Key = 87
-    // Down Key = 264       S Key = 83
-    // Changing Velocity of Player based on Keyboard Input
-    vel.x = (IsKeyDown(262) || IsKeyDown(68))-(IsKeyDown(263) || IsKeyDown(65));
-    vel.y = (IsKeyDown(264) || IsKeyDown(83))-(IsKeyDown(265) || IsKeyDown(87));
-
-    // Applying Vertical Movement
-    pos.y += vel.y * PLAYER_SPEED;
-    shield.pos.y += vel.y * PLAYER_SPEED;
-
-    // Vertical Collision Checks with Walls
-    for (int i = 0; i < SizeofWalls; i++) {
-        if (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i])) {
-            // Creating a Variable to Check how much the Player moved Vertically after a Collision
-            int MovedY = 0;
-
-            if (vel.y > 0) {
-                vel.y = 0;
-                MovedY = pos.y-(Walls[i].y-size.y);
-                pos.y = Walls[i].y-size.y;
-
-            } else if (vel.y < 0) {
-                vel.y = 0;
-                MovedY = pos.y-(Walls[i].y+Walls[i].height);
-                pos.y = Walls[i].y+Walls[i].height;
-            }
-            shield.pos.y+=- MovedY;
-        }
+void Player::move(Vector2 Vels) {
+    pos.x += Vels.x;
+    pos.y += Vels.y;
+    shield.pos.x += Vels.x;
+    shield.pos.y += Vels.y;
+    for (int i = 0; i < 4; i++) {
+        shield.vertices[i] = Vector2{
+            (shield.pos.x) - ((sin(ToRadians(shield.VertexAngles[i]-shield.rot)))*shield.DistanceTweenVertices[i]),
+            (shield.pos.y) - ((cos(ToRadians(shield.VertexAngles[i]-shield.rot)))*shield.DistanceTweenVertices[i])
+        };
     }
+}
 
-    // Applying Horizontal Collision
-    shield.pos.x += vel.x * PLAYER_SPEED;
-    pos.x += vel.x * PLAYER_SPEED;
-
-    // Horizontal Collision Checks with Walls
-    for (int i = 0; i < SizeofWalls; i++) {
-        if (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i])) {
-            // Creating a Variable to Check how much the Player moved Vertically after a Collision
-            int MovedX = 0;
-            
-            if (vel.x > 0) {
-                vel.x = 0;
-                MovedX = pos.x-(Walls[i].x-size.x);
-                pos.x = Walls[i].x-size.x;
-                
-            } else if (vel.x < 0) {
-                vel.x = 0;
-                MovedX = pos.x-(Walls[i].x+Walls[i].width);
-                pos.x = Walls[i].x+Walls[i].width;
-            }
-            shield.pos.x+=-MovedX;
-        }
-    }
-
-    float mouse_offs_x = ((shield.pos.x-world_offs.x)-GetMouseX());
-    float mouse_offs_y = ((shield.pos.y-world_offs.y)-GetMouseY());
+void Player::rotate(float WorldOffsX, float WorldOffsY) {
+    float mouse_offs_x = ((shield.pos.x-WorldOffsX)-GetMouseX());
+    float mouse_offs_y = ((shield.pos.y-WorldOffsY)-GetMouseY());
 
     shield.rot = (ToDegrees(atan2(mouse_offs_y, mouse_offs_x)))+90;
 
@@ -145,6 +95,61 @@ void Player::update(Vector2 world_offs, const Rectangle Walls[], const Vector2 W
             (shield.pos.y) - ((cos(ToRadians(shield.VertexAngles[i]-shield.rot)))*shield.DistanceTweenVertices[i])
         };
     }
+}
+
+void Player::update(Vector2 world_offs, Rectangle Walls[], Vector2 WallsVertices[][4], int SizeofWalls) {
+    // Right Key = 262      D Key = 68
+    // Left Key = 263       A Key = 65
+    // Up Key = 265         W Key = 87
+    // Down Key = 264       S Key = 83
+    // Changing Velocity of Player based on Keyboard Input
+    vel.x = (IsKeyDown(262) || IsKeyDown(68))-(IsKeyDown(263) || IsKeyDown(65));
+    vel.y = (IsKeyDown(264) || IsKeyDown(83))-(IsKeyDown(265) || IsKeyDown(87));
+
+    // Applying Vertical Movement
+    this->move(Vector2{0, vel.y*PLAYER_SPEED});
+
+    // Vertical Collision Checks with Walls
+    for (int i = 0; i < SizeofWalls; i++) {
+        if (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i]) || shield.Shield2RectCol(WallsVertices[i])) {
+            if (vel.y != 0) {
+                float WhichWay = 0;
+                if (vel.y > 0) {
+                    vel.y = 0;
+                    WhichWay = -1;
+                } else if (vel.y < 0) {
+                    vel.y = 0;
+                    WhichWay = 1;   
+                }
+                while (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i]) || shield.Shield2RectCol(WallsVertices[i])) {
+                    this->move(Vector2{0, 0.1F*WhichWay});
+                }
+            }
+        }
+    }
+
+
+    // Applying Horizontal Collision
+    this->move(Vector2{vel.x*PLAYER_SPEED, 0});
+
+    // Horizontal Collision Checks with Walls
+    for (int i = 0; i < SizeofWalls; i++) {
+        if (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i]) || shield.Shield2RectCol(WallsVertices[i])) {
+            if (vel.x != 0) {
+                float WhichWay = 0;
+                if (vel.x > 0) {
+                    WhichWay = -1;
+                } else if (vel.x < 0) {
+                    WhichWay = 1;   
+                }
+                while (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i]) || shield.Shield2RectCol(WallsVertices[i])) {
+                    this->move(Vector2{0.1F*WhichWay, 0});
+                }
+            }
+        }
+    }
+    
+    this->rotate(world_offs.x, world_offs.y);
 }
 
 void Player::draw(Vector2& offs) {
@@ -165,12 +170,7 @@ void Player::draw(Vector2& offs) {
     DrawCircle(shield.center.x-offs.x, shield.center.y-offs.y, 2, GREEN);
     for (int i = 0; i < 4; i++) {
         DrawCircle(shield.vertices[i].x-offs.x, shield.vertices[i].y-offs.y, 2, GREEN);
-        // DrawCircle(shield.testing[i].x-offs.x, shield.testing[i].y-offs.y, 2, RED);
     }
-    // DrawCircle(shield.vertices[0].x-offs.x, shield.vertices[0].y-offs.y, 2, GREEN);
-    // DrawCircle(shield.vertices[1].x-offs.x, shield.vertices[1].y-offs.y, 2, GREEN);
-    // DrawCircle(shield.vertices[2].x-offs.x, shield.vertices[2].y-offs.y, 2, GREEN);
-    // DrawCircle(shield.vertices[3].x-offs.x, shield.vertices[3].y-offs.y, 2, GREEN);
 }
 
 bool Player::WithinCollisionRange(Vector2 OtherCenter, float Rad1, float Rad2) {

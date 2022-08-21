@@ -97,8 +97,8 @@ GameState setup(Player& player) {
 
 
 GameState play(Player& player, Vector2& offs) {
-    const Rectangle RECS[] = {TEST};
-    const Vector2 REC_VERTICES[][4] = {
+    Rectangle RECS[] = {TEST};
+    Vector2 REC_VERTICES[][4] = {
         {
             Vector2{0, 0},
             Vector2{0, 50},
