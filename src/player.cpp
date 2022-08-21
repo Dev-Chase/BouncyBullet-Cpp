@@ -8,7 +8,7 @@ const int PLAYER_SPEED = 4;
 const int W = 800;
 const int H = 600;
 
-Vector2 GetInterval(Vector2 Vertices[4], Vector2 Axis);
+Vector2 RectGetInterval(Vector2 Vertices[4], Vector2 Axis);
 
 Shield::Shield() : pos(Vector2{0, 0}), size(Vector2{0, 0}), og(Vector2{0, 0}), rot(0), colour(WHITE), center(Vector2{0, 0}), DistanceTweenCenters(0)  {}
 
@@ -77,19 +77,62 @@ void Player::reset(Vector2 coords, float width, float height) {
     this->shield.VertexAngles[3] = -50.1944;
 }
 
-void Player::update(Vector2 world_offs) {
+void Player::update(Vector2 world_offs, const Rectangle Walls[], const Vector2 WallsVertices[][4], const int SizeofWalls) {
     // Right Key = 262      D Key = 68
     // Left Key = 263       A Key = 65
     // Up Key = 265         W Key = 87
     // Down Key = 264       S Key = 83
+    // Changing Velocity of Player based on Keyboard Input
     vel.x = (IsKeyDown(262) || IsKeyDown(68))-(IsKeyDown(263) || IsKeyDown(65));
     vel.y = (IsKeyDown(264) || IsKeyDown(83))-(IsKeyDown(265) || IsKeyDown(87));
 
-    pos.x += vel.x * PLAYER_SPEED;
+    // Applying Vertical Movement
     pos.y += vel.y * PLAYER_SPEED;
-
-    shield.pos.x += vel.x * PLAYER_SPEED;
     shield.pos.y += vel.y * PLAYER_SPEED;
+
+    // Vertical Collision Checks with Walls
+    for (int i = 0; i < SizeofWalls; i++) {
+        if (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i])) {
+            // Creating a Variable to Check how much the Player moved Vertically after a Collision
+            int MovedY = 0;
+
+            if (vel.y > 0) {
+                vel.y = 0;
+                MovedY = pos.y-(Walls[i].y-size.y);
+                pos.y = Walls[i].y-size.y;
+
+            } else if (vel.y < 0) {
+                vel.y = 0;
+                MovedY = pos.y-(Walls[i].y+Walls[i].height);
+                pos.y = Walls[i].y+Walls[i].height;
+            }
+            shield.pos.y+=- MovedY;
+        }
+    }
+
+    // Applying Horizontal Collision
+    shield.pos.x += vel.x * PLAYER_SPEED;
+    pos.x += vel.x * PLAYER_SPEED;
+
+    // Horizontal Collision Checks with Walls
+    for (int i = 0; i < SizeofWalls; i++) {
+        if (CheckCollisionRecs(Rectangle{pos.x, pos.y, size.x, size.y}, Walls[i])) {
+            // Creating a Variable to Check how much the Player moved Vertically after a Collision
+            int MovedX = 0;
+            
+            if (vel.x > 0) {
+                vel.x = 0;
+                MovedX = pos.x-(Walls[i].x-size.x);
+                pos.x = Walls[i].x-size.x;
+                
+            } else if (vel.x < 0) {
+                vel.x = 0;
+                MovedX = pos.x-(Walls[i].x+Walls[i].width);
+                pos.x = Walls[i].x+Walls[i].width;
+            }
+            shield.pos.x+=-MovedX;
+        }
+    }
 
     float mouse_offs_x = ((shield.pos.x-world_offs.x)-GetMouseX());
     float mouse_offs_y = ((shield.pos.y-world_offs.y)-GetMouseY());
@@ -137,23 +180,23 @@ bool Player::WithinCollisionRange(Vector2 OtherCenter, float Rad1, float Rad2) {
     return false;
 }
 
-bool Player::Shield2RectCol(Vector2 OtherVertices[4]) {
+bool Shield::Shield2RectCol(Vector2 OtherVertices[4]) {
     Vector2 AxesToTest[4] = {
         Vector2{0, 1},
         Vector2{1, 0}
     };
     
     for (int i = 0; i < 2; i++) {
-        if (!(this->OverlapsAxis(OtherVertices, AxesToTest[i]))) {
+        if (!(this->RectOverlapsAxis(OtherVertices, AxesToTest[i]))) {
             return false;
         }
     }
     return true;
 }
 
-bool Player::OverlapsAxis(Vector2 OtherVertices[4], Vector2 Axis) {
-    Vector2 interval1 = GetInterval(shield.vertices, Axis);
-    Vector2 interval2 = GetInterval(OtherVertices, Axis);
+bool Shield::RectOverlapsAxis(Vector2 OtherVertices[4], Vector2 Axis) {
+    Vector2 interval1 = RectGetInterval(vertices, Axis);
+    Vector2 interval2 = RectGetInterval(OtherVertices, Axis);
     return ((interval2.x <= interval1.y) && (interval1.x <= interval2.y));
 }
 
@@ -161,14 +204,20 @@ float Dot(Vector2 V1, Vector2 V2) {
     return (V1.x*V2.x)+(V1.y*V2.y);
 }
 
-Vector2 GetInterval(Vector2 vertices[4], Vector2 axis) {
+bool Shield::CircleOverlapsAxis(Vector2 Center, Vector2 Axis) {
+    Vector2 interval1 = RectGetInterval(vertices, Axis);
+    Vector2 interval2 = Vector2{Dot(Axis, Center), Dot(Axis, Center)};
+    return ((interval2.x <= interval1.y) && (interval1.x <= interval2.y));
+}
+
+Vector2 RectGetInterval(Vector2 vertices[4], Vector2 Axis) {
     Vector2 result = Vector2{0, 0};
 
-    result.x = Dot(axis, vertices[0]);
+    result.x = Dot(Axis, vertices[0]);
     result.y = result.x;
     
     for (int i = 0;i < 4; i++) {
-        float projection = Dot(axis, vertices[i]);
+        float projection = Dot(Axis, vertices[i]);
         if (projection < result.x) {
             result.x = projection;
         }

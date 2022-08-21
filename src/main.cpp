@@ -4,7 +4,7 @@
 
 using namespace std;
 
-enum GameState {
+enum class GameState {
 	Start,
 	GameOver,
 	Setup,
@@ -13,7 +13,7 @@ enum GameState {
 
 GameState start();
 GameState gameover();
-GameState setup(Player& player, Vector2& offs);
+GameState setup(Player& player);
 GameState play(Player& player, Vector2& offs);
 
 const int W = 800;
@@ -22,7 +22,7 @@ const Rectangle TEST = Rectangle{0, 0, 50, 50};
 
 int main(void)
 {
-	GameState gamestate = Start;
+	GameState gamestate = GameState::Start;
 
     Vector2 offs;
     Vector2& offs_ptr = offs;
@@ -41,16 +41,16 @@ int main(void)
 
         switch (gamestate)
         {
-        case Start:
+        case GameState::Start:
             gamestate = start();
             break;
-        case GameOver:
+        case GameState::GameOver:
             gamestate = gameover();
             break;
-        case Setup:
-            gamestate = setup(player_ptr, offs_ptr);
+        case GameState::Setup:
+            gamestate = setup(player_ptr);
             break;
-        case Play:
+        case GameState::Play:
             DrawRectangle(TEST.x-offs.x, TEST.y-offs.y, TEST.width, TEST.height, RED);
             gamestate = play(player_ptr, offs_ptr);
             break;
@@ -69,10 +69,10 @@ GameState start() {
     DrawText("Press Space or Click to Start", W/2-MeasuredStartText/2, H/2-10, 20, WHITE);
 
     if (IsKeyReleased(32) || IsMouseButtonDown(0)) {
-        return Setup;
+        return GameState::Setup;
     }
 
-    return Start;
+    return GameState::Start;
 }
 
 GameState gameover() {
@@ -83,42 +83,46 @@ GameState gameover() {
     DrawText("Press Space or Click to Restart", W/2-MeasuredRestartText/2, H/2-10, 20, WHITE);
 
     if (IsKeyReleased(32) || IsMouseButtonDown(0)) {
-        return Setup;
+        return GameState::Setup;
     }
 
-    return GameOver;
+    return GameState::GameOver;
 }
 
-GameState setup(Player& player, Vector2& offs) {
+GameState setup(Player& player) {
     player.reset(Vector2{W/2-12.5, H/2-12.5}, 25, 25);
 
-    return Play;
+    return GameState::Play;
 }
 
 
 GameState play(Player& player, Vector2& offs) {
-    player.update(offs);
+    const Rectangle RECS[] = {TEST};
+    const Vector2 REC_VERTICES[][4] = {
+        {
+            Vector2{0, 0},
+            Vector2{0, 50},
+            Vector2{50, 50},
+            Vector2{50, 0}
+        }
+    };
+    player.update(offs, RECS, REC_VERTICES, *(&RECS + 1) - RECS);
     offs = Vector2{player.pos.x-W/2+12.5F, player.pos.y-H/2+12.5F};
 
-    Vector2 TEST_RECT_VERTICES[4] = {
-        Vector2{0, 0},
-        Vector2{0, 50},
-        Vector2{50, 50},
-        Vector2{50, 0}
-    };
-
-    if (player.Shield2RectCol(TEST_RECT_VERTICES)) {
+    // if (player.shield.Shield2RectCol(TEST_RECT_VERTICES)) {
         // Collision Code with Shield Goes here
-        cout << "Worked" << endl;
-    } else {
-        cout << "Didn't" << endl;
-    }
+        // cout << "Hit Shield" << endl;
+    // } 
+    // else {
+    //     cout << "Didn't Hit Shield" << endl;
+    // }
+
 
     player.draw(offs);
 
     if (IsKeyPressed(32)){
-        return GameOver;
+        return GameState::GameOver;
     }
 
-    return Play;
+    return GameState::Play;
 }

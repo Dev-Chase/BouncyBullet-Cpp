@@ -13,8 +13,7 @@ class Player {
         ~Player();
         void reset(Vector2 coords, float width, float height);
         void draw(Vector2& offs);
-        void update(Vector2 world_offs);
+        void update(Vector2 world_offs, const Rectangle Walls[], const Vector2 WallsVertices[][4], const int SizeofWalls);
         bool WithinCollisionRange(Vector2 OtherCenter, float Rad1, float Rad2);
-        bool OverlapsAxis(Vector2 OtherVertices[4], Vector2 Axis);
-        bool Shield2RectCol(Vector2 OtherVertices[4]);
+        bool CollidedRectangle(Rectangle OtherRect);
 };
